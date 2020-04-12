@@ -3,12 +3,11 @@ package middleware
 import (
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"gopkg.in/macaron.v1"
 	"gopkg.in/square/go-jose.v2"
 	"io/ioutil"
 	"net/http"
 	"testing"
-
-	"gopkg.in/macaron.v1"
 
 	"github.com/grafana/grafana/pkg/bus"
 	m "github.com/grafana/grafana/pkg/models"
@@ -67,7 +66,6 @@ func TestAuthJWT(t *testing.T) {
 		setting.AuthJwtHeader = "X-MyJWT"
 		setting.AuthJwtVerification = pathToGoogleJwk
 		setting.AuthJwtEmailClaim = "email"
-		//setting.AuthJwtLoginClaim = "email"
 		InitAuthJwtKey()
 
 		// Create the Claims
