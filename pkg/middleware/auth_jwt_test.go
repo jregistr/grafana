@@ -53,7 +53,7 @@ func TestAuthJWT(t *testing.T) {
 			return nil
 		})
 
-		eck1Bytes, errorLoadingEk1 := ioutil.ReadFile(filepath.Clean(pwd + "/jwkPriv1.json"))
+		eck1Bytes, errorLoadingEk1 := ioutil.ReadFile(filepath.Clean(pwd + "/jwt_ec_key_1_priv.json"))
 		So(errorLoadingEk1, ShouldBeNil)
 
 		eck1 := &jose.JSONWebKey{}
@@ -61,7 +61,7 @@ func TestAuthJWT(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// chain of two public EC keys
-		pathToGoogleJwk := filepath.Clean(pwd + "/jwkPubs.json")
+		pathToGoogleJwk := filepath.Clean(pwd + "/jwt_ec_jwk.json")
 		setting.AuthJwtEnabled = true
 		setting.AuthJwtHeader = "X-MyJWT"
 		setting.AuthJwtVerification = pathToGoogleJwk
