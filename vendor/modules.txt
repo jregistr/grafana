@@ -81,6 +81,8 @@ github.com/davecgh/go-spew/spew
 # github.com/denisenkom/go-mssqldb v0.0.0-20190315220205-a8ed825ac853
 github.com/denisenkom/go-mssqldb
 github.com/denisenkom/go-mssqldb/internal/cp
+# github.com/dgrijalva/jwt-go v3.2.0+incompatible
+github.com/dgrijalva/jwt-go
 # github.com/facebookgo/inject v0.0.0-20180706035515-f23751cae28b
 github.com/facebookgo/inject
 # github.com/facebookgo/structtag v0.0.0-20150214074306-217e25fb9691
@@ -223,7 +225,7 @@ github.com/smartystreets/assertions
 github.com/smartystreets/assertions/internal/go-diff/diffmatchpatch
 github.com/smartystreets/assertions/internal/go-render/render
 github.com/smartystreets/assertions/internal/oglematchers
-# github.com/smartystreets/goconvey v0.0.0-20190731233626-505e41936337
+# github.com/smartystreets/goconvey v1.6.4
 github.com/smartystreets/goconvey/convey
 github.com/smartystreets/goconvey/convey/gotest
 github.com/smartystreets/goconvey/convey/reporting
@@ -364,9 +366,10 @@ gopkg.in/redis.v5/internal/consistenthash
 gopkg.in/redis.v5/internal/hashtag
 gopkg.in/redis.v5/internal/pool
 gopkg.in/redis.v5/internal/proto
-# gopkg.in/square/go-jose.v2 v2.3.0
+# gopkg.in/square/go-jose.v2 v2.4.0
 gopkg.in/square/go-jose.v2
 gopkg.in/square/go-jose.v2/cipher
 gopkg.in/square/go-jose.v2/json
+gopkg.in/square/go-jose.v2/jwt
 # gopkg.in/yaml.v2 v2.2.5
 gopkg.in/yaml.v2
