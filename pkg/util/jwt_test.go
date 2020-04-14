@@ -1,14 +1,40 @@
 package util
 
 import (
+	. "github.com/smartystreets/goconvey/convey"
+	"gopkg.in/square/go-jose.v2"
 	"net/http"
 	"testing"
 	"time"
 
-	. "github.com/smartystreets/goconvey/convey"
-
 	"os"
 )
+
+var (
+	mockClientSwitch bool = false
+)
+
+type mockHttpClient struct {
+}
+
+// Do is the mock client's `Do` func
+func (mc *mockHttpClient) Do(_ *http.Request) (*http.Response, error) {
+	pwd, _ := os.Getwd()
+	var fn = pwd + "/jwt_test_data.firebase.json"
+	println(fn)
+	if mockClientSwitch {
+		fn = pwd + "/jwt_test_data.google.json"
+	}
+
+	file, err := os.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := http.Response{Body: file, Status: http.StatusText(http.StatusOK), StatusCode: http.StatusOK}
+
+	return &resp, nil
+}
 
 func TestJWTUtils(t *testing.T) {
 	pwd, err := os.Getwd()
@@ -94,6 +120,33 @@ func TestJWTUtils(t *testing.T) {
 				So(err, ShouldNotBeNil)
 				So(err.Code, ShouldEqual, JWT_ERROR_Unexpected)
 				So(http.StatusUnauthorized, ShouldEqual, err.HttpStatusCode)
+			})
+		})
+	})
+
+	Convey("A decoder with a mocked http source", t, func() {
+		HttpClient = &mockHttpClient{}
+		decoder := NewJWTDecoder("http://fake-site.com")
+		decoder.TTL = 5 * time.Minute
+		So(decoder.CheckReady(), ShouldBeTrue)
+
+		keys := decoder.keys.getVerificationKeys(jose.Header{KeyID: "97fcbca368fe77808830c8100121ec7bde22cf0e"})
+		So(keys, ShouldHaveLength, 1)
+
+		Convey("The mocked time has advanced 1 hour and decode is called", func() {
+			mockClientSwitch = true
+			TimeNow = func() time.Time {
+				return time.Now().Add(1 * time.Hour)
+			}
+
+			key, err := decoder.Decode(googleIapJwt)
+			So(err, ShouldNotBeNil)
+			So(err.Code, ShouldEqual, JWT_ERROR_Expired)
+			So(key, ShouldNotBeNil)
+
+			Convey("Checking the keys inside the decoder", func() {
+				keys := decoder.keys.getVerificationKeys(jose.Header{KeyID: "2nMJtw"})
+				So(keys, ShouldHaveLength, 1)
 			})
 		})
 	})
