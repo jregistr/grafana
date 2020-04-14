@@ -45,7 +45,7 @@ func TestJWTUtils(t *testing.T) {
 		So(http.StatusUnauthorized, ShouldEqual, errDecoding.HttpStatusCode)
 
 		Convey("that Now() returns a time where the token is valid", func() {
-			decoder.Now = func() time.Time {
+			TimeNow = func() time.Time {
 				return time.Unix(1586748011, 0)
 			}
 
@@ -80,7 +80,7 @@ func TestJWTUtils(t *testing.T) {
 		Convey("Given a Now() function that returns a time making the token valid", func() {
 			decoder.ExpectClaims = make(map[string]string)
 
-			decoder.Now = func() time.Time {
+			TimeNow = func() time.Time {
 				return time.Unix(1543439217, 0) // Make the time OK
 			}
 
