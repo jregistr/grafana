@@ -288,10 +288,6 @@ func (d *keySourceKeySet) getVerificationKeys(header jose.Header) []interface{} 
 		if header.KeyID != "" {
 			return nil
 		}
-		// // Try all the keys
-		// for _, value := range d.keys {
-		//   append(keys, value)
-		// }
 	}
 	return append(keys, key)
 }
