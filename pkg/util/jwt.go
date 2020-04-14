@@ -22,7 +22,6 @@ import (
 //------------------------------------------------------------------
 // Error Handling
 //------------------------------------------------------------------
-
 type JWTErrorCode uint8
 
 const (
@@ -34,6 +33,25 @@ const (
 	JWT_ERROR_Unexpected    JWTErrorCode = 6
 	JWT_ERROR_NotReadyYet   JWTErrorCode = 7
 )
+
+type JwtHTTPClient interface {
+	Do(r *http.Request) (*http.Response, error)
+}
+
+type JwtTimeNow func() time.Time
+
+// These are external apis that the code uses to make decisions
+// Ex: time.Now() is used to get the current time to decide if keys should be reloaded
+// Ex: An http request is made to retrieve public keys for signature verification
+var (
+	HttpClient JwtHTTPClient
+	TimeNow    JwtTimeNow
+)
+
+func init() {
+	TimeNow = time.Now
+	HttpClient = &http.Client{}
+}
 
 type JWTError struct {
 	msg            string
@@ -99,17 +117,13 @@ type JWTDecoder struct {
 
 	// Verify tokens have these claims
 	ExpectClaims map[string]string
-
-	// Used for testing
-	Now func() time.Time
 }
 
 func NewJWTDecoder(source string) *JWTDecoder {
 	return &JWTDecoder{
 		source: source,
 		mutex:  &sync.Mutex{},
-		Now:    time.Now,
-		loaded: time.Now(),
+		loaded: TimeNow(),
 	}
 }
 
@@ -127,7 +141,7 @@ func (d *JWTDecoder) CheckReady() bool {
 		keys, err := newKeySource(d.source)
 		if err == nil {
 			d.keys = keys
-			d.loaded = d.Now()
+			d.loaded = TimeNow()
 		} else {
 			return false
 		}
@@ -157,7 +171,7 @@ func (d *JWTDecoder) Decode(text string) (map[string]interface{}, *JWTError) {
 		return nil, newJWTError(JWT_ERROR_UnableToRead, "Could not parse")
 	}
 
-	expected := jwt.Expected{}.WithTime(time.Now())
+	expected := jwt.Expected{}.WithTime(TimeNow())
 	fmt.Println("JWT:", xxx, expected)
 
 	object, err := jose.ParseSigned(text)
@@ -171,14 +185,14 @@ func (d *JWTDecoder) Decode(text string) (map[string]interface{}, *JWTError) {
 	}
 
 	// Check if we should reload the public keys
-	now := d.Now()
+	now := TimeNow()
 	if d.TTL > 0 {
 		d.mutex.Lock()
 		if now.After(d.loaded.Add(d.TTL)) {
 			keys, err := newKeySource(d.source)
 			if err == nil {
 				d.keys = keys
-				d.loaded = d.Now()
+				d.loaded = TimeNow()
 			} else {
 				// Try again in 30 seconds
 				d.loaded = now.Add(d.TTL).Add(time.Duration(-30) * time.Second)
@@ -338,8 +352,14 @@ func newKeySource(source string) (keySource, error) {
 func getBytesForSource(source string) ([]byte, error) {
 	// Check if it points to a URL
 	if strings.HasPrefix(source, "http") {
-		resp, err := http.Get(source)
+		//resp, err := http.Get(source)
+		req, err := http.NewRequest(http.MethodGet, source, nil)
 		if err != nil {
+			return nil, err
+		}
+
+		resp, err := HttpClient.Do(req)
+		if err != nil || resp == nil {
 			return nil, err
 		}
 
