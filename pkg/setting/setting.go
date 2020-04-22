@@ -572,20 +572,21 @@ func toMap(text string) map[string]string {
 	vals := make(map[string]string)
 
 	// Try parsing JSON
-	if strings.HasPrefix("{", text) {
+	if strings.HasPrefix(text, "{") {
 		err := json.Unmarshal([]byte(text), &vals)
 		if err != nil {
 			return vals
 		}
-	}
-
-	// Otherwise key:value key2:value2
-	for _, propertyAndHeader := range util.SplitString(text) {
-		split := strings.SplitN(propertyAndHeader, ":", 2)
-		if len(split) == 2 {
-			vals[split[0]] = split[1]
+	} else {
+		// Otherwise key:value key2:value2
+		for _, propertyAndHeader := range util.SplitString(text) {
+			split := strings.SplitN(propertyAndHeader, ":", 2)
+			if len(split) == 2 {
+				vals[split[0]] = split[1]
+			}
 		}
 	}
+
 	return vals
 }
 
