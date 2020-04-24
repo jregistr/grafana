@@ -245,13 +245,38 @@ func (d *JWTDecoder) Decode(text string) (map[string]interface{}, *JWTError) {
 
 	// Checking all expected claims
 	if d.ExpectClaims != nil {
+		//Audience needs a special handling as it may be an array in the token
+		if expectedAudience, ok := d.ExpectClaims["aud"]; ok {
+			if !validateAudience(expectedAudience, claims) {
+				return claims, newJWTError(JWT_ERROR_Unexpected, "Mismatch: aud")
+			}
+		}
+
 		for k, v := range d.ExpectClaims {
-			if v != claims[k] {
+			if k != "aud" && v != claims[k] {
 				return claims, newJWTError(JWT_ERROR_Unexpected, "Mismatch: "+k)
 			}
 		}
 	}
+	
 	return claims, nil
+}
+
+func validateAudience(expectedAudience string, claims map[string]interface{}) bool {
+	tokenAudience := claims["aud"]
+	switch v := tokenAudience.(type) {
+	case string:
+		return v == expectedAudience
+	case []interface {}:
+		for _, a := range v {
+			if a == expectedAudience {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
 }
 
 //-------------------------------------------------
