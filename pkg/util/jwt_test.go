@@ -1,7 +1,7 @@
 package util
 
 import (
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 	"gopkg.in/square/go-jose.v2"
 	"net/http"
 	"testing"
@@ -48,62 +48,62 @@ func TestJWTUtils(t *testing.T) {
 	// Expired token (using kid=97fcbca368fe77808830c8100121ec7bde22cf0e)
 	firebaseJwtToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6Ijk3ZmNiY2EzNjhmZTc3ODA4ODMwYzgxMDAxMjFlYzdiZGUyMmNmMGUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9uaXRyb24tZGV2IiwibmFtZSI6IlJ5YW4gTWNLaW5sZXkiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDYuZ29vZ2xldXNlcmNvbnRlbnQuY29tLy1WVVZEODZxRzZkQS9BQUFBQUFBQUFBSS9BQUFBQUFBQUFCRS9JV1VfbXdBdV9HSS9waG90by5qcGciLCJhdWQiOiJtb25pdHJvbi1kZXYiLCJhdXRoX3RpbWUiOjE1NDM0MzkyMTcsInVzZXJfaWQiOiJ3SDJXelhOS0dHUnRaZzl5bVRlS0tYbTlOaGIyIiwic3ViIjoid0gyV3pYTktHR1J0Wmc5eW1UZUtLWG05TmhiMiIsImlhdCI6MTU1MDAxNDg2MiwiZXhwIjoxNTUwMDE4NDYyLCJlbWFpbCI6InJ5YW5AbmF0ZWxlbmVyZ3kuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImZpcmViYXNlIjp7ImlkZW50aXRpZXMiOnsiZ29vZ2xlLmNvbSI6WyIxMDg0NzkxMjI2MjIxNjMzOTU5NTgiXSwiZW1haWwiOlsicnlhbkBuYXRlbGVuZXJneS5jb20iXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwYXNzd29yZCJ9fQ.Yil2QL1leIITBJIS4m8-SDdgMSv6oIvp5gPZqAvYSAzShkGauIAcmaSG0CRh4AzjdqaLafpw7_t9ihADTV-h7HPXJjzxBWS9HQ1ZW8ndOSTGl9FDYn2CC0jrFjWjqip4HVKQr88tt8idYMGk-eThNfGl3AmJw-AUvj-zMfxbQCGM6Kskj5kYvmsHy2UL5aeM8VNPQF19BBIfquSP8nrv12G79ntdrh60ikosw8Vi7lG-LuFC2XLJzgH0_Z7dHPH8fH-51HQHYgcxJ0-Zt7mXmOWcinqp2UPS0ZeUmMEwHQkA_5gB9_ZT900e5LRz5d3N95FqbZrJh0p5qSnU8WSwtg"
 
-	Convey("Test reading Google JWK json", t, func() {
+	t.Run("Test reading Google JWK json", func(t *testing.T) {
 		decoder := NewJWTDecoder(pwd + "/jwt_test_data.google.json")
-		So(decoder.CheckReady(), ShouldBeTrue)
+		assert.True(t, decoder.CheckReady())
 	})
 
-	Convey("Test reading Google firebase Key set", t, func() {
+	t.Run("Test reading Google firebase Key set", func(t *testing.T) {
 		decoder := NewJWTDecoder(pwd + "/jwt_test_data.firebase.json")
-		So(decoder.CheckReady(), ShouldBeTrue)
+		assert.True(t, decoder.CheckReady())
 	})
 
-	Convey("Test reading Google IAP Jwt string", t, func() {
+	t.Run("Test reading Google IAP Jwt string", func(t *testing.T) {
 		decoder := NewJWTDecoder(pwd + "/jwt_test_data.google.json")
-		So(decoder.CheckReady(), ShouldBeTrue)
+		assert.True(t, decoder.CheckReady())
 
-		key, errDecoding := decoder.Decode(googleIapJwt)
+		key, err := decoder.Decode(googleIapJwt)
 
-		So(key["email"], ShouldEqual, "jeffstestingemail@gmail.com")
+		assert.Equal(t, "jeffstestingemail@gmail.com", key["email"])
 
-		So(errDecoding, ShouldNotBeNil)
-		So(errDecoding.Code, ShouldEqual, JWT_ERROR_Expired)
-		So(http.StatusUnauthorized, ShouldEqual, errDecoding.HttpStatusCode)
+		assert.NotNil(t, err)
+		assert.Equal(t, JWT_ERROR_Expired, err.Code)
+		assert.Equal(t, http.StatusUnauthorized, err.HttpStatusCode)
 
-		Convey("that Now() returns a time where the token is valid", func() {
+		t.Run("that Now() returns a time where the token is valid", func(t *testing.T) {
 			TimeNow = func() time.Time {
 				return time.Unix(1586748011, 0)
 			}
 
-			key, errDecoding := decoder.Decode(googleIapJwt)
-			So(errDecoding, ShouldBeNil)
-			So(key, ShouldNotBeNil)
-			So(key["email"], ShouldEqual, "jeffstestingemail@gmail.com")
+			key, err := decoder.Decode(googleIapJwt)
+			assert.Nil(t, err)
+			assert.NotNil(t, key)
+			assert.Equal(t, "jeffstestingemail@gmail.com", key["email"])
 
-			Convey("The Decoder's Expected Issuer does not match the tokens", func() {
+			t.Run("The Decoder's Expected Issuer does not match the tokens", func(t *testing.T) {
 				decoder.ExpectClaims = make(map[string]string)
 				decoder.ExpectClaims["iss"] = "https://securetoken.google.com/obviously-wrong.com"
 
-				key, errDecoding := decoder.Decode(googleIapJwt)
-				So(errDecoding, ShouldNotBeNil)
-				So(errDecoding.Code, ShouldEqual, JWT_ERROR_Unexpected)
-				So(key["iss"], ShouldEqual, "https://cloud.google.com/iap")
+				key, err := decoder.Decode(googleIapJwt)
+				assert.NotNil(t, err)
+				assert.Equal(t, JWT_ERROR_Unexpected, err.Code)
+				assert.Equal(t, "https://cloud.google.com/iap", key["iss"])
 			})
 		})
 	})
 
-	Convey("Test reading firebase tokens", t, func() {
+	t.Run("Test reading firebase tokens", func(t *testing.T) {
 		decoder := NewJWTDecoder(pwd + "/jwt_test_data.firebase.json")
-		So(decoder.CheckReady(), ShouldBeTrue)
+		assert.True(t, decoder.CheckReady())
 
 		key, err := decoder.Decode(firebaseJwtToken)
 
-		So(key["email"], ShouldEqual, "ryan@natelenergy.com")
-		So(err, ShouldNotBeNil)
-		So(err.Code, ShouldEqual, JWT_ERROR_Expired)
-		So(http.StatusUnauthorized, ShouldEqual, err.HttpStatusCode)
+		assert.Equal(t, "ryan@natelenergy.com", key["email"])
+		assert.NotNil(t, err)
+		assert.Equal(t, JWT_ERROR_Expired, err.Code)
+		assert.Equal(t, http.StatusUnauthorized, err.HttpStatusCode)
 
-		Convey("Given a Now() function that returns a time making the token valid", func() {
+		t.Run("Given a Now() function that returns a time making the token valid", func(t *testing.T) {
 			decoder.ExpectClaims = make(map[string]string)
 
 			TimeNow = func() time.Time {
@@ -111,42 +111,42 @@ func TestJWTUtils(t *testing.T) {
 			}
 
 			key, err = decoder.Decode(firebaseJwtToken)
-			So(err, ShouldBeNil)
+			assert.Nil(t, err)
 
-			Convey("Given a Decoder whose Expected claim won't match the tokens's own", func() {
+			t.Run("Given a Decoder whose Expected claim won't match the tokens's own", func(t *testing.T) {
 				decoder.ExpectClaims["iss"] = "https://securetoken.google.com/monitron-devX"
 				key, err = decoder.Decode(firebaseJwtToken)
-				So(key, ShouldNotBeNil)
-				So(err, ShouldNotBeNil)
-				So(err.Code, ShouldEqual, JWT_ERROR_Unexpected)
-				So(http.StatusUnauthorized, ShouldEqual, err.HttpStatusCode)
+				assert.NotNil(t, key)
+				assert.NotNil(t, err)
+				assert.Equal(t, JWT_ERROR_Unexpected, err.Code)
+				assert.Equal(t, http.StatusUnauthorized, err.HttpStatusCode)
 			})
 		})
 	})
 
-	Convey("A decoder with a mocked http source", t, func() {
+	t.Run("A decoder with a mocked http source", func(t *testing.T) {
 		HttpClient = &mockHttpClient{}
 		decoder := NewJWTDecoder("http://fake-site.com")
 		decoder.TTL = 5 * time.Minute
-		So(decoder.CheckReady(), ShouldBeTrue)
+		assert.True(t, decoder.CheckReady())
 
 		keys := decoder.keys.getVerificationKeys(jose.Header{KeyID: "97fcbca368fe77808830c8100121ec7bde22cf0e"})
-		So(keys, ShouldHaveLength, 1)
+		assert.Len(t, keys, 1)
 
-		Convey("The mocked time has advanced 1 hour and decode is called", func() {
+		t.Run("The mocked time has advanced 1 hour and decode is called", func(t *testing.T) {
 			mockClientSwitch = true
 			TimeNow = func() time.Time {
 				return time.Now().Add(1 * time.Hour)
 			}
 
 			key, err := decoder.Decode(googleIapJwt)
-			So(err, ShouldNotBeNil)
-			So(err.Code, ShouldEqual, JWT_ERROR_Expired)
-			So(key, ShouldNotBeNil)
+			assert.NotNil(t, err)
+			assert.NotNil(t, key)
+			assert.Equal(t, JWT_ERROR_Expired, err.Code)
 
-			Convey("Checking the keys inside the decoder", func() {
+			t.Run("Checking the keys inside the decoder", func(t *testing.T) {
 				keys := decoder.keys.getVerificationKeys(jose.Header{KeyID: "2nMJtw"})
-				So(keys, ShouldHaveLength, 1)
+				assert.Len(t, keys, 1)
 			})
 		})
 	})
