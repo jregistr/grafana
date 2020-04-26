@@ -151,4 +151,81 @@ func TestJWTUtils(t *testing.T) {
 		})
 	})
 
+	t.Run("Test Cloudflare Access Support", func(t *testing.T) {
+		
+		cloudflareJwkPath := pwd + "/jwt_test_data.cloudflareaccess.json"
+		cloduflareAccessJwt := "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOlsiZjczYzdhNjcxMjI1ODQyOGRkNjI1YmU4ZGExZjY2NjBiNzRkOWExMGQ4ODc3ZjU3OWY4NDI5NDkwYmFhM2E2NCJdLCJlbWFpbCI6InRlc3RAZ21haWwuY29tIiwiZXhwIjoxNTg3OTAwMzQ1LCJpYXQiOjE1ODc4OTY3NDUsImlzcyI6ImdyYWZhbmF0ZXN0IiwianRpIjoiZndKODFXUWE0d0tSMHdUT24yMThnUSIsIm5iZiI6MTU4Nzg5Njc0NX0.eqo8r4rdF_v-lf39IIM29Q6BqgxB9i8B4qhXc428sVIo4UBw9nWK1A5VOhus_UVbNVLqX15QrFamHbCasAha0ZUflp6nuW9AJIt1GXo2y3U_DbJDKIuJfVj-299kyj5FI6RSG-QlWGinb-NEeKMXUNi_-OXnkH70nH2T4PvJ_kaQBs4bM06gOBUO33UNkf8yCYaMGr3F_WlNqq1MoyPMXn77lO9i9RCOI-vnpfxYD96RfkYshNqrlM3Veq__ZydN0NBVzauvVDuxPdbZdJixZ7xYSlwL7DAp9_U9GFBzC5ieV2PKU7_qHStJ-IHAzqmawji4ZlMkGLrZpEW0AMhAnCp4rQNtT0Kowk6gLGaKCfe-92KwGsDYzeIeII--aMB7H72x9uiqqz9FK0zVb46KsD4ZGC9_cCYkcO1InVBYddKEQiqv7OrZ33lxe7Y6LzltO5sDl0BF8HaA34vHAqMerK90A1cZBOYVgO547CQx9JSX24nZ47-U0_ZgtUMvxwwiAe9_1zfjxpDT_QnYn2fuwTXUpjWfZF05ei2NRuUh0WUKwwHa4V-4uPyDvL0Mg_iMjzB1wjQwS_xXDKQdl95prc2BLivdzmBemP79ClGFQHcSj9tBTbQn9svNxXok8oiEJGNVVkdlu4Mz9elP8jWeqNNTuOySEnu7w2dtX0G-NiQ"
+
+		jwtAudience := "f73c7a6712258428dd625be8da1f6660b74d9a10d8877f579f8429490baa3a64"
+		jwtExpireTime, e := time.Parse(time.RFC3339, "2020-04-26T11:25:45+00:00")
+		assert.Nil(t, e, "No errors should happen parsing the time")
+	
+		timeBeforeExpire := jwtExpireTime.Add(-10 * time.Minute)
+		timeAfterExpire := jwtExpireTime.Add(10 * time.Minute)
+
+		t.Run("Should be able to read JWK", func(t *testing.T) {
+			decoder := NewJWTDecoder(cloudflareJwkPath)
+			assert.True(t, decoder.CheckReady())
+		})
+
+		t.Run("Should authorize with a valid and matching JWT", func(t *testing.T) {
+			decoder := NewJWTDecoder(cloudflareJwkPath)
+			decoder.ExpectClaims = make(map[string]string)
+			decoder.ExpectClaims["aud"] = jwtAudience
+			assert.True(t, decoder.CheckReady())
+
+			TimeNow = func() time.Time {
+				return timeBeforeExpire
+			}
+
+			key, err := decoder.Decode(cloduflareAccessJwt)
+	
+			assert.Equal(t, "test@gmail.com", key["email"])
+			assert.Nil(t, err)
+		})
+
+		t.Run("Should not authorize with a non matching JWT", func(t *testing.T) {
+			decoder := NewJWTDecoder(cloudflareJwkPath)
+			decoder.ExpectClaims = make(map[string]string)
+			decoder.ExpectClaims["aud"] = "someotheraudiencethatdoesnotmatchthejwtaudclaim"
+			assert.True(t, decoder.CheckReady())
+
+			TimeNow = func() time.Time {
+				return timeBeforeExpire
+			}
+
+			_, err := decoder.Decode(cloduflareAccessJwt)
+	
+			assert.NotNil(t, err)
+			assert.Equal(t, JWT_ERROR_Unexpected, err.Code)
+			assert.Equal(t, "Mismatch: aud", err.msg)
+		})
+
+		t.Run("Should not authorize with a expired JWT", func(t *testing.T) {
+			decoder := NewJWTDecoder(cloudflareJwkPath)
+			decoder.ExpectClaims = make(map[string]string)
+			decoder.ExpectClaims["aud"] = jwtAudience
+			assert.True(t, decoder.CheckReady())
+
+			TimeNow = func() time.Time {
+				return timeAfterExpire
+			}
+
+			_, err := decoder.Decode(cloduflareAccessJwt)
+	
+			assert.NotNil(t, err)
+			assert.Equal(t, JWT_ERROR_Expired, err.Code)
+		})
+
+		t.Run("Should not authorize with a invalid JWT", func(t *testing.T) {
+			decoder := NewJWTDecoder(cloudflareJwkPath)
+			assert.True(t, decoder.CheckReady())
+
+			invalidJWT := firebaseJwtToken
+			_, err := decoder.Decode(invalidJWT)
+	
+			assert.NotNil(t, err)
+			assert.Equal(t, JWT_ERROR_UnknownKey, err.Code)
+		})
+	})
 }
